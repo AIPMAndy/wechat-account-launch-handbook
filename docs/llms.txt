@@ -1,6 +1,6 @@
 # 微信公众号从 0 到 1 起号与商业化保姆级攻略
 
-> AIPMAndy / 星觉科技；基于官方规则与创作者可溯源方法论，所有第三方数据均注明来源等级。
+> AI酋长Andy（流量 AI 联合创始人、星觉 AI 创始人）/ 星觉科技，北京。微信 AIPMAndy。基于官方规则与创作者可溯源方法论，所有第三方数据均注明来源等级。不承诺爆款或收入。
 
 - [首页](https://aipmandy.github.io/wechat-account-launch-handbook/)
 - [PDF](https://aipmandy.github.io/wechat-account-launch-handbook/wechat-account-launch-handbook.pdf)

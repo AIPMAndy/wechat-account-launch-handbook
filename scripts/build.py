@@ -8,12 +8,12 @@ import csv, json, html, re, sys
 from datetime import date
 from urllib.parse import quote
 import mistune
-from weasyprint import HTML, CSS
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT/'docs'
 CHAPTERS = ROOT/'content'/'chapters'
 SITE_URL = 'https://aipmandy.github.io/wechat-account-launch-handbook/'
+SOCIAL_IMAGE = SITE_URL + 'assets/social-preview.png'
 PDF_NAME = 'wechat-account-launch-handbook.pdf'
 TODAY = '2026-11-15'
 md = mistune.create_markdown(escape=True, plugins=['table','strikethrough','url'])
@@ -53,14 +53,42 @@ DOCS.mkdir(parents=True,exist_ok=True)
 (DOCS/'assets'/'site.css').write_text(SITE_CSS,encoding='utf-8')
 (DOCS/'assets'/'site.js').write_text(JS,encoding='utf-8')
 
-def head(title,desc,url):
-    return f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{html.escape(title)}</title><meta name="description" content="{html.escape(desc,quote=True)}"><link rel="canonical" href="{html.escape(url,quote=True)}"><meta property="og:title" content="{html.escape(title,quote=True)}"><meta property="og:description" content="{html.escape(desc,quote=True)}"><meta property="og:type" content="article"><meta property="og:url" content="{html.escape(url,quote=True)}"><meta name="theme-color" content="#fafaf9"><link rel="stylesheet" href="{SITE_URL}assets/site.css"></head><body>'''
+def json_ld(title,desc,url):
+    kind='TechArticle' if url.rstrip('/')==SITE_URL.rstrip('/') else 'Article'
+    data={
+        '@context':'https://schema.org',
+        '@type':kind,
+        'headline':title,
+        'description':desc,
+        'inLanguage':'zh-CN',
+        'url':url,
+        'mainEntityOfPage':url,
+        'image':{'@type':'ImageObject','url':SOCIAL_IMAGE,'width':1280,'height':640},
+        'author':{
+            '@type':'Person',
+            'name':'AI酋长Andy',
+            'jobTitle':'流量 AI 联合创始人、星觉 AI 创始人',
+            'address':{'@type':'PostalAddress','addressLocality':'北京'},
+            'worksFor':{'@type':'Organization','name':'星觉科技','url':'https://www.a6no1.cn/'},
+            'sameAs':['https://github.com/AIPMAndy','https://metaver.vip/'],
+        },
+        'publisher':{'@type':'Organization','name':'星觉科技','url':'https://www.a6no1.cn/'},
+        'dateModified':TODAY,
+        'isAccessibleForFree':True,
+    }
+    payload=json.dumps(data,ensure_ascii=False).replace('<','\\u003c')
+    return f'<script type="application/ld+json">{payload}</script>'
+
+def head(title,desc,url,structured=True):
+    image=html.escape(SOCIAL_IMAGE,quote=True)
+    ld=json_ld(title,desc,url) if structured else ''
+    return f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{html.escape(title)}</title><meta name="description" content="{html.escape(desc,quote=True)}"><link rel="canonical" href="{html.escape(url,quote=True)}"><meta property="og:title" content="{html.escape(title,quote=True)}"><meta property="og:description" content="{html.escape(desc,quote=True)}"><meta property="og:type" content="article"><meta property="og:url" content="{html.escape(url,quote=True)}"><meta property="og:image" content="{image}"><meta property="og:image:width" content="1280"><meta property="og:image:height" content="640"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="{image}"><meta name="theme-color" content="#fafaf9">{ld}<link rel="stylesheet" href="{SITE_URL}assets/site.css"></head><body>'''
 
 def nav():
     return '''<header class="bar"><div class="wrap"><a class="logo" href="'''+SITE_URL+'''"><small>AI CHIEF ANDY</small>公众号起号指南</a><nav aria-label="主导航" class="links"><a class="hide-mobile" href="'''+SITE_URL+'''#chapters">完整教程</a><a class="hide-mobile" href="'''+SITE_URL+'''#tools">工具箱</a><a href="'''+SITE_URL+'''#checklist">30天SOP</a><a class="primary" href="'''+SITE_URL+PDF_NAME+'''" download>PDF ↓</a></nav></div></header>'''
 
 def foot():
-    return '''<footer class="footer"><div class="wrap footergrid"><div><div class="eyebrow" style="color:#95b4fb">OPEN KNOWLEDGE · 2026</div><h3 style="font-size:24px;letter-spacing:-.03em">把真正做成的事，写成别人能复用的知识。</h3><p>作者：AI 酋长 Andy · 星觉科技。本文免费开源，不要求关注、转发或付费才能阅读。真实性、广告识别、知识产权及平台规则应优先于增长捷径。</p><p><a href="https://metaver.vip/">个人官网</a> · <a href="https://www.a6no1.cn/">公司官网</a> · <a href="https://github.com/AIPMAndy">GitHub</a> · 公众号搜索「AI 酋长 Andy」</p></div><div><strong>需要交流具体问题？</strong><p>微信 AIPMAndy（备注「公众号」）</p><div><button class="copy" type="button" data-copy="AIPMAndy">复制微信号</button> <span class="msg" aria-live="polite"></span></div><p class="note">非强制联系入口。无收入承诺，品牌商务合作需核对广告披露要求。</p></div></div><div class="wrap" style="margin-top:30px;border-top:1px solid #3c424b;padding-top:16px;color:#939aa4;font-size:11px">© 2026 AIPMAndy · Code: MIT · Original content: CC BY 4.0 · Evidence checked: 2026-11-15</div></footer><script src="'''+SITE_URL+'''assets/site.js" defer></script></body></html>'''
+    return '''<footer class="footer"><div class="wrap footergrid"><div><div class="eyebrow" style="color:#95b4fb">OPEN KNOWLEDGE · 2026</div><h3 style="font-size:24px;letter-spacing:-.03em">把真正做成的事，写成别人能复用的知识。</h3><p>作者：AI酋长Andy · 流量 AI 联合创始人、星觉 AI 创始人 · 星觉科技（北京）。本文免费开源，不要求关注、转发或付费才能阅读。真实性、广告识别、知识产权及平台规则应优先于增长捷径。</p><p><a href="https://metaver.vip/">个人官网</a> · <a href="https://www.a6no1.cn/">公司官网</a> · <a href="https://github.com/AIPMAndy">GitHub</a> · 公众号搜索「AI 酋长 Andy」</p></div><div><strong>需要交流具体问题？</strong><p>微信 AIPMAndy（备注「公众号」）</p><div><button class="copy" type="button" data-copy="AIPMAndy">复制微信号</button> <span class="msg" aria-live="polite"></span></div><p class="note">非强制联系入口。无收入承诺，品牌商务合作需核对广告披露要求。</p></div></div><div class="wrap" style="margin-top:30px;border-top:1px solid #3c424b;padding-top:16px;color:#939aa4;font-size:11px">© 2026 AIPMAndy · Code: MIT · Original content: CC BY 4.0 · Evidence checked: 2026-11-15</div></footer><script src="'''+SITE_URL+'''assets/site.js" defer></script></body></html>'''
 
 def tile(ch,i):
     return f'<a class="chapter-tile" data-search="{html.escape(ch["title"]+" "+ch["excerpt"],quote=True)}" href="{SITE_URL}chapters/{ch["slug"]}.html"><span class="chapter-id">{i:02d}</span><span><strong>{html.escape(ch["title"].split("｜",1)[-1])}</strong><small>{html.escape(ch["excerpt"].split("本章交付物")[-1][:75])}</small></span></a>'
@@ -70,7 +98,7 @@ with (ROOT/'templates/30-day-sop.csv').open(encoding='utf-8-sig') as f:
     for r in csv.DictReader(f):sop.append({'task':r['核心任务'],'outcome':r['验收产物']})
 
 home=head('微信公众号起号保姆级攻略｜从0到1、30天SOP、品牌商单与变现｜AI酋长Andy','完整开源公众号起号教程：账号设置、定位、选题、原创实测、30天冷启动、流量主与品牌商单、报价交付、合规规则、可编辑模板。',SITE_URL)+nav()+f'''
-<main><section class="hero"><div class="wrap"><div class="eyebrow">THE WECHAT CREATOR PLAYBOOK / 2026</div><h1>从第一篇文章，<br>到一个<em>可持续</em>的公众号。</h1><div class="summary">一本真正可以照着做的开源手册。24 章完整教程、30 天行动计划、原创实测 SOP、品牌商单与利润管理工具。<strong>不追算法玄学，不承诺躺赚。</strong></div><div class="tags"><span class="tag">24 章实操</span><span class="tag">30 天有产物的计划</span><span class="tag">品牌商单 SOP</span><span class="tag">2026 平台规则</span><span class="tag">永久免费开源</span></div><div class="actions"><a class="btn btn-dark" href="#start">开始 7 天起号 →</a><a class="btn btn-soft" href="{SITE_URL}{PDF_NAME}" download>下载完整 PDF ↓</a></div><p class="note" style="margin-top:24px">方法基于微信公开规则、蜗牛 King 起号教程与西堂商单实战长文交叉研究。个案数据不是收益保证。最近核验：{TODAY}。</p></div></section>
+<main><section class="hero"><div class="wrap"><div class="eyebrow">THE WECHAT CREATOR PLAYBOOK / 2026</div><h1>从第一篇文章，<br>到一个<em>可持续</em>的公众号。</h1><div class="summary">一本真正可以照着做的开源手册。24 章完整教程、30 天行动计划、原创实测 SOP、品牌商单与利润管理工具。面向零基础公众号作者、AI 垂直号、个人 IP 与企业内容团队。<strong>不追算法玄学，不承诺躺赚。</strong></div><div class="tags"><span class="tag">24 章实操</span><span class="tag">30 天有产物的计划</span><span class="tag">品牌商单 SOP</span><span class="tag">2026 平台规则</span><span class="tag">永久免费开源</span></div><div class="actions"><a class="btn btn-dark" href="#start">开始 7 天起号 →</a><a class="btn btn-soft" href="{SITE_URL}{PDF_NAME}" download>下载完整 PDF ↓</a></div><p class="note" style="margin-top:24px">方法基于微信公开规则、蜗牛 King 起号教程与西堂商单实战长文交叉研究。个案数据不是收益保证。最近核验：{TODAY}。</p></div></section>
 <section id="start" class="section"><div class="wrap"><div class="section-head"><span class="eyebrow">01 / CHOOSE THE GAME</span><h2>先选收入模式，再决定发什么。</h2><p>同样是公众号，广告流量、品牌商单和专业服务，根本不是一套增长目标。先明确读者和你真正要交付的价值。</p></div><div class="three"><div class="panel"><div class="category">A / TRAFFIC</div><h3>知识与流量主</h3><p>目标是持续帮助某类读者解决具体问题；积累真实阅读与自然关注，再检查广告开通资格。</p><ul><li>关键词 + 用户问题</li><li>有证据的系列知识</li><li>不将阅读量直接折算收入</li></ul></div><div class="panel"><div class="category">B / SPONSORSHIP</div><h3>AI 工具与品牌商单</h3><p>围绕实际使用场景完成测试、沉淀作品、准备媒体包，建立与品牌匹配的内容交付流程。</p><ul><li>读者任务 → 实测证据 → 内容</li><li>商务建联、范围报价</li><li>验收、成本、复购与回款</li></ul></div><div class="panel"><div class="category">C / EXPERTISE</div><h3>个人 IP 与企业服务</h3><p>把经验转成可信赖的案例、教程和判断，吸引有实际需求的人主动交流。</p><ul><li>专业能力与可公开证据</li><li>明确交付与不适合人群</li><li>跟踪合格询盘而非泛粉丝</li></ul></div></div><div class="panel" style="margin-top:18px"><label class="field" for="route-select"><b>选择你的主要路径</b><select id="route-select"><option value="ads">我从零开始，希望先把内容做好</option><option value="brands">我想接 AI 工具 / 品牌商单</option><option value="ip">我提供咨询、课程或企业服务</option></select></label><p id="route-result" class="pathrec" aria-live="polite"></p></div></div></section>
 <section id="chapters" class="section subtle"><div class="wrap"><div class="section-head"><span class="eyebrow">02 / COMPLETE HANDBOOK</span><h2>24 章，少讲概念，多给交付物。</h2><p>每章都标明你能得到什么，按顺序做，也能按目标快速查。网站和 PDF 由同一批原始章节生成。</p></div><div class="toolbar"><input class="search" type="search" id="search" aria-label="搜索章节" placeholder="搜索：选题、媒体包、报价、流量主、回款…"><span class="meta" id="search-result">24 / 24 章</span></div><div class="chapter-list">{''.join(tile(c,i) for i,c in enumerate(chapters))}</div></div></section>
 <section id="tools" class="section"><div class="wrap"><div class="section-head"><span class="eyebrow">03 / INTERACTIVE TOOLS</span><h2>做判断的工具，而不是展示假数据。</h2><p>所有输入只在当前网页本地计算；不读取账号后台，不上传内容，不预测真实收益。</p></div><div class="utility"><div class="panel"><span class="category">TOPIC / 0–25</span><h3>选题五维评分器</h3><p>先验证证据，再谈爆款。五项分数都是你自己的假设评分，不代表微信算法。</p>{''.join(f'<div class="range"><label for="s{i}">{label} <b id="num-s{i}">3</b></label><input class="score-input" type="range" id="s{i}" min="0" max="5" value="3"></div>' for i,label in enumerate(['真实痛点强度','实际搜索与传播需求','可供给的一手证据','相对于已有文章的差异化','目标业务匹配度'],1))}<label class="checklabel"><input id="has-evidence" type="checkbox" checked> 我已拥有可核实来源或计划了可执行的真人实测</label><div class="rule"></div><div id="topic-score" class="score">15<span> / 25</span></div><p id="topic-decision" class="pathrec" aria-live="polite"></p></div><div class="panel"><span class="category">UNIT ECONOMICS / SCENARIO</span><h3>商单贡献利润测算</h3><p>教学假设：填入预期合作数量、报价和直接成本。**不是实际成交率或未来收入预测。**</p><div class="fields"><label class="field"><b>假设每月完成并确认的商单数</b><input class="calc" type="number" id="deals" min="0" max="1000" value="2"></label><label class="field"><b>单篇合同收入（元）</b><input class="calc" type="number" id="price" min="0" max="9999999" value="4000"></label><label class="field"><b>每单直接制作/渠道成本（元）</b><input class="calc" type="number" id="cost" min="0" max="9999999" value="1500"></label><label class="field"><b>每月额外固定投入（元）</b><input class="calc" type="number" id="fixed" min="0" max="9999999" value="1000"></label></div><div class="rule"></div><div class="fields"><div><p class="meta">假设确认收入</p><output id="projected-revenue">—</output></div><div><p class="meta">假设简化贡献盈余</p><output id="projected-margin">—</output></div></div><p class="note">未计税费、人工隐性成本及应收账款；现金收益还需要实际回款凭证。</p></div></div></div></section>
@@ -90,13 +118,15 @@ import shutil
 (DOCS/'templates').mkdir(exist_ok=True)
 for file in (ROOT/'templates').iterdir():
     if file.is_file():shutil.copy2(file,DOCS/'templates'/file.name)
+preview_src=ROOT/'assets'/'social-preview.png'
+if preview_src.is_file():shutil.copy2(preview_src,DOCS/'assets'/'social-preview.png')
 (DOCS/'search-index.json').write_text(json.dumps([{'title':x['title'],'slug':x['slug'],'summary':x['excerpt']} for x in chapters],ensure_ascii=False,indent=2),encoding='utf-8')
 (DOCS/'robots.txt').write_text('User-agent: *\nAllow: /\nSitemap: '+SITE_URL+'sitemap.xml\n',encoding='utf-8')
 from xml.sax.saxutils import escape as xe
 urls=[SITE_URL]+[SITE_URL+'chapters/'+x['slug']+'.html' for x in chapters]
 (DOCS/'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'+''.join(f'<url><loc>{xe(u)}</loc><lastmod>{TODAY}</lastmod></url>\n' for u in urls)+'</urlset>\n',encoding='utf-8')
-(DOCS/'llms.txt').write_text('# 微信公众号从 0 到 1 起号与商业化保姆级攻略\n\n> AIPMAndy / 星觉科技；基于官方规则与创作者可溯源方法论，所有第三方数据均注明来源等级。\n\n- [首页]('+SITE_URL+')\n- [PDF]('+SITE_URL+PDF_NAME+')\n- [完整章节]('+SITE_URL+'chapters/00-start-here.html)\n- [证据来源]('+SITE_URL+'chapters/23-evidence-and-sources.html)\n- [作者个人官网](https://metaver.vip/)\n',encoding='utf-8')
-(DOCS/'404.html').write_text(head('页面不存在｜公众号起号开源攻略','页面未找到。',SITE_URL+'404.html')+nav()+'<main class="wrap section"><p class="eyebrow">404</p><h1>页面暂时不存在。</h1><p>目录可能更新，请返回首页查找。</p><a class="btn btn-dark" href="'+SITE_URL+'">返回首页 →</a></main>'+foot(),encoding='utf-8')
+(DOCS/'llms.txt').write_text('# 微信公众号从 0 到 1 起号与商业化保姆级攻略\n\n> AI酋长Andy（流量 AI 联合创始人、星觉 AI 创始人）/ 星觉科技，北京。微信 AIPMAndy。基于官方规则与创作者可溯源方法论，所有第三方数据均注明来源等级。不承诺爆款或收入。\n\n- [首页]('+SITE_URL+')\n- [PDF]('+SITE_URL+PDF_NAME+')\n- [完整章节]('+SITE_URL+'chapters/00-start-here.html)\n- [证据来源]('+SITE_URL+'chapters/23-evidence-and-sources.html)\n- [作者个人官网](https://metaver.vip/)\n',encoding='utf-8')
+(DOCS/'404.html').write_text(head('页面不存在｜公众号起号开源攻略','页面未找到。',SITE_URL+'404.html',structured=False)+nav()+'<main class="wrap section"><p class="eyebrow">404</p><h1>页面暂时不存在。</h1><p>目录可能更新，请返回首页查找。</p><a class="btn btn-dark" href="'+SITE_URL+'">返回首页 →</a></main>'+foot(),encoding='utf-8')
 
 # PDF with different typography, generated directly from chapter MD to HTML; page numbers/bookmarks.
 PRINT_CSS=r'''
@@ -110,6 +140,7 @@ contents=''.join(f'<li><a href="#c{i}">{html.escape(c["title"])}</a></li>' for i
 body=''.join(f'<section class="chapter {("stage-start" if i in (0,6,13,20) else "")}" id="c{i}"><p class="chapter-label">CHAPTER {i:02d} / 24</p>{ch["body"]}</section>' for i,ch in enumerate(chapters))
 pdf_html='<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"></head><body>'+cover+'<section class="contents"><div class="chapter-label">CONTENTS / GUIDE MAP</div><h1>目录</h1><p class="preface">这份 PDF 与 GitHub Pages 网站来自同一组 Markdown；2026-11-15 核验。若你正在阅读旧下载版本，请回到仓库检查最新修订。第三方作者的收入为其自述，不等同收益承诺。</p><ul>'+contents+'</ul><p class="preface">个人官网 https://metaver.vip/　公司官网 https://www.a6no1.cn/　微信 AIPMAndy</p></section>'+body+'</body></html>'
 if '--no-pdf' not in sys.argv:
+    from weasyprint import HTML, CSS
     print('Building PDF...')
     HTML(string=pdf_html,base_url=str(DOCS)).write_pdf(str(DOCS/PDF_NAME),stylesheets=[CSS(string=PRINT_CSS)])
 print('Build complete:',len(chapters),'chapters; pages output:',DOCS)
