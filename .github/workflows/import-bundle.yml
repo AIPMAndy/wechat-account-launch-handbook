@@ -50,7 +50,7 @@ jobs:
           PY
       - name: Commit imported sources to main
         run: |
-          git add -A
+          git add -A -- . ':(exclude).github/workflows/**'
           if git diff --cached --quiet; then
             echo "All source files already present"
           else
