@@ -1,0 +1,98 @@
+name: Import complete handbook from verified archive
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'source-bundle.zip'
+      - '.github/workflows/import-bundle.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Verify and extract archived project
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path, PurePosixPath
+          from zipfile import ZipFile
+          import hashlib, shutil, stat, tempfile
+          archive = Path('source-bundle.zip')
+          expected = '7c7ba14a392a61bb75753a11959572afd0077e25352fa4dafb208af2feaf5620'
+          digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+          assert digest == expected, 'Archive digest mismatch'
+          root = Path(tempfile.mkdtemp(prefix='handbook-import-'))
+          with ZipFile(archive) as z:
+              for item in z.infolist():
+                  p = PurePosixPath(item.filename)
+                  assert p.parts and p.parts[0] == 'wechat-account-launch-handbook'
+                  assert not p.is_absolute() and '..' not in p.parts
+                  assert not stat.S_ISLNK(item.external_attr >> 16)
+              z.extractall(root)
+          project = root/'wechat-account-launch-handbook'
+          assert (project/'README.md').is_file()
+          assert len(list((project/'content'/'chapters').glob('*.md'))) == 24
+          assert (project/'docs'/'wechat-account-launch-handbook.pdf').stat().st_size > 1000000
+          for item in project.iterdir():
+              target = Path.cwd()/item.name
+              if item.is_dir():
+                  shutil.copytree(item,target,dirs_exist_ok=True)
+              else:
+                  shutil.copy2(item,target)
+          archive.unlink()
+          Path('.github/workflows/import-bundle.yml').unlink()
+          print('Verified and imported', len(list(Path('content/chapters').glob('*.md'))), 'chapters')
+          PY
+      - name: Commit imported sources to main
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "All source files already present"
+          else
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "feat: publish full 24-chapter handbook, interactive site, templates and PDF"
+            git push origin HEAD:main
+          fi
+      - name: Verify published artifact structure
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          md = list(Path('content/chapters').glob('*.md'))
+          html = list(Path('docs/chapters').glob('*.html'))
+          templates = list(Path('templates').glob('*'))
+          assert len(md) == 24, len(md)
+          assert len(html) == 24, len(html)
+          assert len(templates) >= 11, len(templates)
+          assert Path('docs/index.html').is_file()
+          assert Path('docs/wechat-account-launch-handbook.pdf').stat().st_size > 1000000
+          print('Verified 24 chapters,', len(templates), 'templates, site and PDF')
+          PY
+      - name: Check Pages setup status
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          status=$(curl -sS -o /tmp/pages-status.json -w '%{http_code}' -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' "https://api.github.com/repos/$GH_REPO/pages")
+          if [[ "$status" == "200" ]]; then
+            echo 'enabled=yes' >> "$GITHUB_OUTPUT"
+          else
+            echo 'enabled=no' >> "$GITHUB_OUTPUT"
+            echo '::warning::Repository source committed; enable Settings > Pages > GitHub Actions to activate the website.'
+          fi
+      - name: Configure Pages
+        if: steps.pages.outputs.enabled == 'yes'
+        uses: actions/configure-pages@v5
+      - name: Upload website artifact
+        if: steps.pages.outputs.enabled == 'yes'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+      - name: Deploy Pages
+        if: steps.pages.outputs.enabled == 'yes'
+        id: deployment
+        uses: actions/deploy-pages@v4
