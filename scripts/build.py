@@ -8,12 +8,12 @@ import csv, json, html, re, sys
 from datetime import date
 from urllib.parse import quote
 import mistune
-from weasyprint import HTML, CSS
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT/'docs'
 CHAPTERS = ROOT/'content'/'chapters'
 SITE_URL = 'https://aipmandy.github.io/wechat-account-launch-handbook/'
+SOCIAL_IMAGE = SITE_URL + 'assets/social-preview.png'
 PDF_NAME = 'wechat-account-launch-handbook.pdf'
 TODAY = '2026-11-15'
 md = mistune.create_markdown(escape=True, plugins=['table','strikethrough','url'])
@@ -53,14 +53,42 @@ DOCS.mkdir(parents=True,exist_ok=True)
 (DOCS/'assets'/'site.css').write_text(SITE_CSS,encoding='utf-8')
 (DOCS/'assets'/'site.js').write_text(JS,encoding='utf-8')
 
-def head(title,desc,url):
-    return f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{html.escape(title)}</title><meta name="description" content="{html.escape(desc,quote=True)}"><link rel="canonical" href="{html.escape(url,quote=True)}"><meta property="og:title" content="{html.escape(title,quote=True)}"><meta property="og:description" content="{html.escape(desc,quote=True)}"><meta property="og:type" content="article"><meta property="og:url" content="{html.escape(url,quote=True)}"><meta name="theme-color" content="#fafaf9"><link rel="stylesheet" href="{SITE_URL}assets/site.css"></head><body>'''
+def json_ld(title,desc,url):
+    kind='TechArticle' if url.rstrip('/')==SITE_URL.rstrip('/') else 'Article'
+    data={
+        '@context':'https://schema.org',
+        '@type':kind,
+        'headline':title,
+        'description':desc,
+        'inLanguage':'zh-CN',
+        'url':url,
+        'mainEntityOfPage':url,
+        'image':{'@type':'ImageObject','url':SOCIAL_IMAGE,'width':1280,'height':640},
+        'author':{
+            '@type':'Person',
+            'name':'AI酋长Andy',
+            'jobTitle':'流量 AI 联合创始人、星觉 AI 创始人',
+            'address':{'@type':'PostalAddress','addressLocality':'北京'},
+            'worksFor':{'@type':'Organization','name':'星觉科技','url':'https://www.a6no1.cn/'},
+            'sameAs':['https://github.com/AIPMAndy','https://metaver.vip/'],
+        },
+        'publisher':{'@type':'Organization','name':'星觉科技','url':'https://www.a6no1.cn/'},
+        'dateModified':TODAY,
+        'isAccessibleForFree':True,
+    }
+    payload=json.dumps(data,ensure_ascii=False).replace('<','\\u003c')
+    return f'<script type="application/ld+json">{payload}</script>'
+
+def head(title,desc,url,structured=True):
+    image=html.escape(SOCIAL_IMAGE,quote=True)
+    ld=json_ld(title,desc,url) if structured else ''
+    return f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{html.escape(title)}</title><meta name="description" content="{html.escape(desc,quote=True)}"><link rel="canonical" href="{html.escape(url,quote=True)}"><meta property="og:title" content="{html.escape(title,quote=True)}"><meta property="og:description" content="{html.escape(desc,quote=True)}"><meta property="og:type" content="article"><meta property="og:url" content="{html.escape(url,quote=True)}"><meta property="og:image" content="{image}"><meta property="og:image:width" content="1280"><meta property="og:image:height" content="640"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="{image}"><meta name="theme-color" content="#fafaf9">{ld}<link rel="stylesheet" href="{SITE_URL}assets/site.css"></head><body>'''
 
 def nav():
     return '''<header class="bar"><div class="wrap"><a class="logo" href="'''+SITE_URL+'''"><small>AI CHIEF ANDY</small>公众号起号指南</a><nav aria-label="主导航" class="links"><a class="hide-mobile" href="'''+SITE_URL+'''#chapters">完整教程</a><a class="hide-mobile" href="'''+SITE_URL+'''#tools">工具箱</a><a href="'''+SITE_URL+'''#checklist">30天SOP</a><a class="primary" href="'''+SITE_URL+PDF_NAME+'''" download>PDF ↓</a></nav></div></header>'''
 
 def foot():
-    return '''<footer class="footer"><div class="wrap footergrid"><div><div class="eyebrow" style="color:#95b4fb">OPEN KNOWLEDGE · 2026</div><h3 style="font-size:24px;letter-spacing:-.03em">把真正做成的事，写成别人能复用的知识。</h3><p>作者：AI 酋长 Andy · 星觉科技。本文免费开源，不要求关注、转发或付费才能阅读。真实性、广告识别、知识产权及平台规则应优先于增长捷径。</p><p><a href="https://metaver.vip/">个人官网</a> · <a href="https://www.a6no1.cn/">公司官网</a> · <a href="https://github.com/AIPMAndy">GitHub</a> · 公众号搜索「AI 酋长 Andy」</p></div><div><strong>需要交流具体问题？</strong><p>微信 AIPMAndy（备注「公众号」）</p><div><button class="copy" type="button" data-copy="AIPMAndy">复制微信号</button> <span class="msg" aria-live="polite"></span></div><p class="note">非强制联系入口。无收入承诺，品牌商务合作需核对广告披露要求。</p></div></div><div class="wrap" style="margin-top:30px;border-top:1px solid #3c424b;padding-top:16px;color:#939aa4;font-size:11px">© 2026 AIPMAndy · Code: MIT · Original content: CC BY 4.0 · Evidence checked: 2026-11-15</div></footer><script src="'''+SITE_URL+'''assets/site.js" defer></script></body></html>'''
+    return '''<footer class="footer"><div class="wrap footergrid"><div><div class="eyebrow" style="color:#95b4fb">OPEN KNOWLEDGE · 2026</div><h3 style="font-size:24px;letter-spacing:-.03em">把真正做成的事，写成别人能复用的知识。</h3><p>作者：AI酋长Andy · 流量 AI 联合创始人、星觉 AI 创始人 · 星觉科技（北京）。本文免费开源，不要求关注、转发或付费才能阅读。真实性、广告识别、知识产权及平台规则应优先于增长捷径。</p><p><a href="https://metaver.vip/">个人官网</a> · <a href="https://www.a6no1.cn/">公司官网</a> · <a href="https://github.com/AIPMAndy">GitHub</a> · 公众号搜索「AI 酋长 Andy」</p></div><div><strong>需要交流具体问题？</strong><p>微信 AIPMAndy（备注「公众号」）</p><div><button class="copy" type="button" data-copy="AIPMAndy">复制微信号</button> <span class="msg" aria-live="polite"></span></div><p class="note">非强制联系入口。无收入承诺，品牌商务合作需核对广告披露要求。</p></div></div><div class="wrap" style="margin-top:30px;border-top:1px solid #3c424b;padding-top:16px;color:#939aa4;font-size:11px">© 2026 AIPMAndy · Code: MIT · Original content: CC BY 4.0 · Evidence checked: 2026-11-15</div></footer><script src="'''+SITE_URL+'''assets/site.js" defer></script></body></html>'''
 
 def tile(ch,i):
     return f'<a class="chapter-tile" data-search="{html.escape(ch["title"]+" "+ch["excerpt"],quote=True)}" href="{SITE_URL}chapters/{ch["slug"]}.html"><span class="chapter-id">{i:02d}</span><span><strong>{html.escape(ch["title"].split("｜",1)[-1])}</strong><small>{html.escape(ch["excerpt"].split("本章交付物")[-1][:75])}</small></span></a>'
@@ -90,13 +118,15 @@ import shutil
 (DOCS/'templates').mkdir(exist_ok=True)
 for file in (ROOT/'templates').iterdir():
     if file.is_file():shutil.copy2(file,DOCS/'templates'/file.name)
+preview_src=ROOT/'assets'/'social-preview.png'
+if preview_src.is_file():shutil.copy2(preview_src,DOCS/'assets'/'social-preview.png')
 (DOCS/'search-index.json').write_text(json.dumps([{'title':x['title'],'slug':x['slug'],'summary':x['excerpt']} for x in chapters],ensure_ascii=False,indent=2),encoding='utf-8')
 (DOCS/'robots.txt').write_text('User-agent: *\nAllow: /\nSitemap: '+SITE_URL+'sitemap.xml\n',encoding='utf-8')
 from xml.sax.saxutils import escape as xe
 urls=[SITE_URL]+[SITE_URL+'chapters/'+x['slug']+'.html' for x in chapters]
 (DOCS/'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'+''.join(f'<url><loc>{xe(u)}</loc><lastmod>{TODAY}</lastmod></url>\n' for u in urls)+'</urlset>\n',encoding='utf-8')
-(DOCS/'llms.txt').write_text('# 微信公众号从 0 到 1 起号与商业化保姆级攻略\n\n> AIPMAndy / 星觉科技；基于官方规则与创作者可溯源方法论，所有第三方数据均注明来源等级。\n\n- [首页]('+SITE_URL+')\n- [PDF]('+SITE_URL+PDF_NAME+')\n- [完整章节]('+SITE_URL+'chapters/00-start-here.html)\n- [证据来源]('+SITE_URL+'chapters/23-evidence-and-sources.html)\n- [作者个人官网](https://metaver.vip/)\n',encoding='utf-8')
-(DOCS/'404.html').write_text(head('页面不存在｜公众号起号开源攻略','页面未找到。',SITE_URL+'404.html')+nav()+'<main class="wrap section"><p class="eyebrow">404</p><h1>页面暂时不存在。</h1><p>目录可能更新，请返回首页查找。</p><a class="btn btn-dark" href="'+SITE_URL+'">返回首页 →</a></main>'+foot(),encoding='utf-8')
+(DOCS/'llms.txt').write_text('# 微信公众号从 0 到 1 起号与商业化保姆级攻略\n\n> AI酋长Andy（流量 AI 联合创始人、星觉 AI 创始人）/ 星觉科技，北京。微信 AIPMAndy。基于官方规则与创作者可溯源方法论，所有第三方数据均注明来源等级。不承诺爆款或收入。\n\n- [首页]('+SITE_URL+')\n- [PDF]('+SITE_URL+PDF_NAME+')\n- [完整章节]('+SITE_URL+'chapters/00-start-here.html)\n- [证据来源]('+SITE_URL+'chapters/23-evidence-and-sources.html)\n- [作者个人官网](https://metaver.vip/)\n',encoding='utf-8')
+(DOCS/'404.html').write_text(head('页面不存在｜公众号起号开源攻略','页面未找到。',SITE_URL+'404.html',structured=False)+nav()+'<main class="wrap section"><p class="eyebrow">404</p><h1>页面暂时不存在。</h1><p>目录可能更新，请返回首页查找。</p><a class="btn btn-dark" href="'+SITE_URL+'">返回首页 →</a></main>'+foot(),encoding='utf-8')
 
 # PDF with different typography, generated directly from chapter MD to HTML; page numbers/bookmarks.
 PRINT_CSS=r'''
@@ -110,6 +140,7 @@ contents=''.join(f'<li><a href="#c{i}">{html.escape(c["title"])}</a></li>' for i
 body=''.join(f'<section class="chapter {("stage-start" if i in (0,6,13,20) else "")}" id="c{i}"><p class="chapter-label">CHAPTER {i:02d} / 24</p>{ch["body"]}</section>' for i,ch in enumerate(chapters))
 pdf_html='<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"></head><body>'+cover+'<section class="contents"><div class="chapter-label">CONTENTS / GUIDE MAP</div><h1>目录</h1><p class="preface">这份 PDF 与 GitHub Pages 网站来自同一组 Markdown；2026-11-15 核验。若你正在阅读旧下载版本，请回到仓库检查最新修订。第三方作者的收入为其自述，不等同收益承诺。</p><ul>'+contents+'</ul><p class="preface">个人官网 https://metaver.vip/　公司官网 https://www.a6no1.cn/　微信 AIPMAndy</p></section>'+body+'</body></html>'
 if '--no-pdf' not in sys.argv:
+    from weasyprint import HTML, CSS
     print('Building PDF...')
     HTML(string=pdf_html,base_url=str(DOCS)).write_pdf(str(DOCS/PDF_NAME),stylesheets=[CSS(string=PRINT_CSS)])
 print('Build complete:',len(chapters),'chapters; pages output:',DOCS)

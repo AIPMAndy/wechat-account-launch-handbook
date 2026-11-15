@@ -1,15 +1,24 @@
 # 微信公众号从 0 到 1 起号与商业化 · 保姆级开源攻略
 
-> 起号 / 内容 / 商单 / 收益 / 30 天 SOP / 免费模板 / 可部署网站 / 同源 PDF
->
-> 作者：**AI 酋长 Andy｜星觉科技** · 更新：**2026-11-15** · 面向零基础公众号作者、AI 垂直号、个人 IP 与企业内容团队
+这是一份开源攻略：24 章正文、30 天 SOP、可编辑模板，以及由同一组 Markdown 生成的 PDF。面向零基础公众号作者、AI 垂直号、个人 IP 与企业内容团队。
 
 **核心目标：** 帮一个完全没有运营经验的人，从注册、定位、验证用户需求，走到发布可核实的原创内容、复盘、获得匹配的商业询盘，并在发生合作时完成合规交付与回款。**不承诺 30 天必爆、100 粉收入、月入十万、算法捷径。**
 
+本地快速开始（Python 3.11+）：
+
+```bash
+python -m pip install -r requirements.txt
+python scripts/build.py
+python scripts/verify.py
+python -m http.server 8000 -d docs
+# 打开 http://127.0.0.1:8000/
+```
+
 ## 阅读入口
 
-- **GitHub Pages**：https://aipmandy.github.io/wechat-account-launch-handbook/ （**仅在用户创建仓库并启用 Pages 且部署成功后有效**；不可当作已上线链接）
-- **本地网站**：打开 `docs/index.html` 或 `python scripts/build.py` 重建
+- **GitHub Pages**：https://aipmandy.github.io/wechat-account-launch-handbook/  
+  2026-11-15 对该地址执行 curl，HTTP 状态码为 200。同一天 GitHub 仓库对象的 `has_pages` 为 true。`.github/workflows/pages.yml` 在推送到 `main` 时运行 `scripts/build.py` 与 `scripts/verify.py`，并在 `GET /repos/{owner}/{repo}/pages` 返回 200 时把 `docs/` 部署到 GitHub Pages。本次没有打开仓库 Settings 页面，因此不描述 Source 下拉框当前选中的项。
+- **本地网站**：打开 `docs/index.html`，或按上面的命令重建后访问 http://127.0.0.1:8000/
 - **精美 PDF**：`docs/wechat-account-launch-handbook.pdf`（由同一组 Markdown 内容生成）
 - **所有正文**：[`content/chapters/`](content/chapters/)
 - **30 天表格**：[`templates/30-day-sop.csv`](templates/30-day-sop.csv)
@@ -22,6 +31,20 @@
 3. 用 30 天计划检验每一步是否有证据，遇到低阅读先看[`22-failure-diagnostics.md`](content/chapters/22-failure-diagnostics.md)。
 4. 想接品牌合作，重点阅读 13–19 章，拿走媒体包/Brief/报价/验收/回款模板。
 5. 每篇文稿都必须有人类主导的实测、判断和最终审核；**不提供自动批量代写/代发教程**。
+
+## 常见问题
+
+### 会保证爆款或收入吗？
+
+不会。本攻略不承诺 30 天必爆、100 粉收入、月入十万或算法捷径。文中的个案数据不是收益保证。
+
+### 能用来批量代写或代发吗？
+
+不能。每篇文稿都必须有人类主导的实测、判断和最终审核。本仓库不提供自动批量代写或代发教程。
+
+### 线上 Pages 和本地预览有什么差别？
+
+线上地址在 2026-11-15 返回 HTTP 200，仓库 `has_pages` 为 true。本地站点来自 `docs/`：用 `python scripts/build.py` 从 Markdown 重建，用 `python scripts/verify.py` 做结构检查。`.github/workflows/pages.yml` 只在 Pages 接口返回 200 时部署 `docs/`。只改本地文件不会自动更新已经部署的页面。
 
 ## 两篇指定研究资料，分工明确
 
@@ -49,17 +72,9 @@
 
 ## 从 Markdown 一键生成网站和 PDF
 
-要求：Python 3.11+。本地运行：
+要求：Python 3.11+。命令与文首「本地快速开始」相同：`python -m pip install -r requirements.txt`、`python scripts/build.py`、`python scripts/verify.py`。需要本机预览时再运行 `python -m http.server 8000 -d docs`。
 
-```bash
-python -m pip install -r requirements.txt
-python scripts/build.py
-python scripts/verify.py
-python -m http.server 8000 -d docs
-# 打开 http://127.0.0.1:8000/
-```
-
-GitHub Pages 工作流使用 `.github/workflows/pages.yml`，需先在仓库 Settings → Pages → Build and deployment → Source 选择 **GitHub Actions**。**仅在已获得 GitHub 仓库写权限的情况下才能发布**，本地文件/压缩包不等于线上已部署。生成的 PDF 与 24 章 Markdown 同源。
+GitHub Pages 工作流是 `.github/workflows/pages.yml`。它在 `GET /repos/{owner}/{repo}/pages` 返回 200 时，用 Actions 把 `docs/` 部署出去。本地文件或压缩包本身不是线上部署结果。生成的 PDF 与 24 章 Markdown 同源。本次没有打开 Settings 页面，不记录 Source 下拉框的当前选项。
 
 ## 授权与诚信
 
@@ -70,7 +85,7 @@ GitHub Pages 工作流使用 `.github/workflows/pages.yml`，需先在仓库 Set
 
 ## 关于作者与服务
 
-- **AI 酋长 Andy**（前腾讯/百度 AI 产品方向经验，AI 产品化与创业实践）
+- **AI酋长Andy**（流量 AI 联合创始人、星觉 AI 创始人）· 星觉科技 · 北京 · 更新：**2026-11-15**
 - 微信：**`AIPMAndy`**（备注「公众号」）
 - 个人官网：[metaver.vip](https://metaver.vip/) / [服务介绍](https://metaver.vip/services)
 - 公司官网：[星觉科技 a6no1.cn](https://www.a6no1.cn/)

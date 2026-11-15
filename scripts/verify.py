@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Offline structural tests for source-driven Pages site and 36-ish page CJK PDF."""
 from pathlib import Path
-import csv, json, re, sys, subprocess
+import csv, json, re, struct, sys, subprocess
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from pypdf import PdfReader
@@ -34,7 +34,38 @@ for file in [DOCS/'index.html', DOCS/'404.html',*sorted((DOCS/'chapters').glob('
         if not clean:continue
         dest=(file.parent/clean).resolve()
         check(dest.exists(), f'broken internal link: {file.name} -> {url}')
-check((DOCS/'robots.txt').exists() and (DOCS/'sitemap.xml').exists(), 'SEO root docs missing')
+check((DOCS/'robots.txt').exists() and (DOCS/'sitemap.xml').exists() and (DOCS/'llms.txt').exists(), 'SEO root docs missing')
+preview=DOCS/'assets'/'social-preview.png'
+source_preview=ROOT/'assets'/'social-preview.png'
+check(preview.exists() and source_preview.exists(), 'social preview missing from assets/ or docs/assets/')
+if preview.exists():
+    raw=preview.read_bytes()
+    check(raw[:8]==b'\x89PNG\r\n\x1a\n' and len(raw)<1024*1024, 'social preview is not a PNG under 1MB')
+    if raw[:8]==b'\x89PNG\r\n\x1a\n':
+        width,height=struct.unpack('>II', raw[16:24])
+        check(width==1280 and height==640, f'social preview size {width}x{height}')
+    check(source_preview.read_bytes()==raw, 'docs social preview differs from assets/social-preview.png')
+image_url='https://aipmandy.github.io/wechat-account-launch-handbook/assets/social-preview.png'
+for file in [DOCS/'index.html', DOCS/'404.html', *sorted((DOCS/'chapters').glob('*.html'))]:
+    text=file.read_text(encoding='utf-8')
+    for needle in [
+        f'property="og:image" content="{image_url}"',
+        'property="og:image:width" content="1280"',
+        'property="og:image:height" content="640"',
+        'name="twitter:card" content="summary_large_image"',
+        f'name="twitter:image" content="{image_url}"',
+        '<link rel="canonical"',
+        '<meta name="description"',
+    ]:
+        check(needle in text, f'meta missing in {file.name}: {needle[:70]}')
+    if file.name!='404.html':
+        check('application/ld+json' in text, f'JSON-LD missing in {file.name}')
+        check('aggregateRating' not in text and 'reviewCount' not in text, f'rating markup in {file.name}')
+home_ld=DOCS/'index.html'
+if home_ld.exists():
+    home_text=home_ld.read_text(encoding='utf-8')
+    check('"@type": "TechArticle"' in home_text, 'homepage JSON-LD is not TechArticle')
+    check('AI酋长Andy' in home_text and '流量 AI 联合创始人、星觉 AI 创始人' in home_text, 'homepage author metadata incomplete')
 check((DOCS/'search-index.json').exists(),'missing search index')
 index=json.loads((DOCS/'search-index.json').read_text(encoding='utf-8'))
 check(len(index)==24, 'search index count mismatch')
