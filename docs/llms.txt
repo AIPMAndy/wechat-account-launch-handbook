@@ -1,0 +1,9 @@
+# 微信公众号从 0 到 1 起号与商业化保姆级攻略
+
+> AIPMAndy / 星觉科技；基于官方规则与创作者可溯源方法论，所有第三方数据均注明来源等级。
+
+- [首页](https://aipmandy.github.io/wechat-account-launch-handbook/)
+- [PDF](https://aipmandy.github.io/wechat-account-launch-handbook/wechat-account-launch-handbook.pdf)
+- [完整章节](https://aipmandy.github.io/wechat-account-launch-handbook/chapters/00-start-here.html)
+- [证据来源](https://aipmandy.github.io/wechat-account-launch-handbook/chapters/23-evidence-and-sources.html)
+- [作者个人官网](https://metaver.vip/)

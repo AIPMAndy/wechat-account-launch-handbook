@@ -1,0 +1,25 @@
+{
+  "version": "1.0.0",
+  "generated_date": "2026-11-15",
+  "github_status": "NOT_PUBLISHED_OR_VERIFIED",
+  "artifact_counts": {
+    "chapter_markdown": 24,
+    "template_files": 11,
+    "website_chapter_pages": 24
+  },
+  "pdf": {
+    "path": "docs/wechat-account-launch-handbook.pdf",
+    "sha256": "f394d260563f4250d2bbc2aac1bc0544d7f3203c21a37bf6ba8a07aabf0e8d21"
+  },
+  "source_reference_urls": [
+    "https://x.com/isnail/status/2060928267046060445",
+    "https://x.com/xitang_ai/status/2121207382630117537"
+  ],
+  "checks": [
+    "python scripts/build.py",
+    "python scripts/verify.py",
+    "PDF visual render sample",
+    "PDF bounding box scan"
+  ],
+  "website_live_checked": false
+}
