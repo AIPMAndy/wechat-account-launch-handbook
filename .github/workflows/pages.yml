@@ -1,0 +1,61 @@
+name: Build, audit and deploy handbook to GitHub Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  pages:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install CJK fonts for reproducible PDF
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y fonts-noto-cjk
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Build Pages and PDF from Markdown
+        run: python scripts/build.py
+      - name: Verify structure, links and PDF text
+        run: python scripts/verify.py
+      - name: Check whether GitHub Pages is enabled
+        id: pages_check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          status=$(curl -sS -o /tmp/pages-check.json -w '%{http_code}' -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' "https://api.github.com/repos/$GH_REPO/pages")
+          if [[ "$status" == "200" ]]; then
+            echo 'enabled=yes' >> "$GITHUB_OUTPUT"
+          else
+            echo 'enabled=no' >> "$GITHUB_OUTPUT"
+            echo '::warning::Enable Settings > Pages > Source: GitHub Actions, then rerun this workflow to publish the website.'
+          fi
+      - name: Configure Pages
+        if: steps.pages_check.outputs.enabled == 'yes'
+        uses: actions/configure-pages@v5
+      - name: Upload Pages artifact
+        if: steps.pages_check.outputs.enabled == 'yes'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+      - name: Deploy to GitHub Pages
+        if: steps.pages_check.outputs.enabled == 'yes'
+        id: deployment
+        uses: actions/deploy-pages@v4
